@@ -33,9 +33,8 @@ def redis_queue_callback(body):
 if __name__ == "__main__":
     print("[*] Starting service")
     prepare: dict = lambda msg: literal_eval(msg.decode("utf-8"))
-    initialize = lambda host: RedisConsumer(host=host)
     print("[*] Initialization started")
-    consumer = initialize(sett.BROKER_HOST)
+    consumer = RedisConsumer(sett.BROKER_HOST)
     print("[*] Initialization ended")
 
     try:
