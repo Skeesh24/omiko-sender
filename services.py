@@ -10,9 +10,8 @@ class RedisConsumer(IConsumer):
         self.connection = Redis.from_url(url=host)
 
     def start_consuming(self, handler):
-        pubsub = self.connection.pubsub()
-        self.pubsub = pubsub
-        pubsub.subscribe(**{sett.RECOVERY_QUEUE: handler})
+        self.pubsub = self.connection.pubsub()
+        self.pubsub.subscribe(**{sett.RECOVERY_QUEUE: handler})
 
     def stop_consuming(self):
         self.pubsub.unsubscribe()
@@ -23,9 +22,7 @@ class RedisConsumer(IConsumer):
 
 class RabbitMQConsumer(IConsumer):
     def __init__(self, host: str) -> None:
-        self.connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host=host)
-        )
+        self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=host))
         self.channel = self.connection.channel()
 
     def start_consuming(self, handler):

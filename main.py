@@ -22,15 +22,20 @@ def send_email(to: str, subject: str, msg: str) -> None:
         server.quit()
 
 
-def queue_callback(ch, method, properties, body):
-    prepare: dict = lambda msg: literal_eval(msg.decode("utf-8"))
+prepare: dict = lambda msg: literal_eval(msg.decode("utf-8"))
+initialize = lambda host: RedisConsumer(host=host)
+
+
+def rabbitmq_queue_callback(ch, method, properties, body):
     send_email(**prepare(body))
 
 
-initialize = lambda host: RedisConsumer(host=host)
+def redis_queue_callback(body):
+    send_email(**prepare(body))
+
 
 consumer = initialize(sett.BROKER_HOST)
-consumer.start_consuming(queue_callback)
+consumer.start_consuming(handler=redis_queue_callback)
 
 
 try:
