@@ -10,7 +10,6 @@ from settings import sett
 class RedisConsumer(IConsumer):
     def __init__(self, host: str) -> None:
         self.connection = redis.from_url(host)
-        self.STOP_CONSUME = False
 
     async def start_consuming(self, handler):
         """
@@ -21,14 +20,13 @@ class RedisConsumer(IConsumer):
         self.pubsub.subscribe(**{sett.RECOVERY_QUEUE: handler})
 
         async def consume():
-            while not self.STOP_CONSUME:
+            while True:
                 message = self.pubsub.get_message()
                 if message and message["type"] == "message":
                     payload = message["data"]
                     handler(payload)
 
-            self.STOP_CONSUME = False
-        return consume
+        consume()
 
     def stop_consuming(self):
         self.STOP_CONSUME = True

@@ -23,6 +23,9 @@ def send_email(to: str, subject: str, msg: str) -> None:
         server.quit()
 
 
+prepare: dict = lambda msg: literal_eval(msg.decode("utf-8"))
+
+
 def rabbitmq_queue_callback(ch, method, properties, body):
     send_email(**prepare(body))
 
@@ -31,18 +34,21 @@ def redis_queue_callback(body):
     send_email(**prepare(body))
 
 
-if __name__ == "__main__":
+async def main():
     print("[*] Starting service")
-    prepare: dict = lambda msg: literal_eval(msg.decode("utf-8"))
     print("[*] Initialization started")
     consumer = RedisConsumer(sett.BROKER_HOST)
     print("[*] Initialization ended")
 
     try:
         print("[*] consuming started")
-        while True:
-            asyncio.run(consumer.start_consuming(redis_queue_callback))
+        await consumer.start_consuming(redis_queue_callback)
     except KeyboardInterrupt:
         print("Interrupted")
+    finally:
         consumer.stop_consuming()
         consumer.close()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
