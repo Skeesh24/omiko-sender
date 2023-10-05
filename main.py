@@ -40,7 +40,8 @@ if __name__ == "__main__":
 
     try:
         print("[*] consuming started")
-        asyncio.run(consumer.start_consuming(redis_queue_callback))
+        while True:
+            asyncio.run(consumer.start_consuming(redis_queue_callback))
     except KeyboardInterrupt:
         print("Interrupted")
         consumer.stop_consuming()
