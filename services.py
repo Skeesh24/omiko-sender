@@ -20,7 +20,11 @@ class RedisConsumer(IConsumer):
 
         def consume():
             while not self.STOP_CONSUME:
-                self.connection.lpop(sett.RECOVERY_QUEUE)
+                message = self.pubsub.get_message()
+                if message and message['type'] == 'message':
+                    payload = message['data']
+                    handler(payload)
+                    
             self.STOP_CONSUME = False
 
         consume()
