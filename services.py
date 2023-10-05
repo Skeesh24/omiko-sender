@@ -9,7 +9,7 @@ class RedisConsumer(IConsumer):
     def __init__(self, host: str) -> None:
         self.connection = Redis.from_url(url=host)
 
-    def start_consuming(self, handler: function):
+    def start_consuming(self, handler):
         pubsub = self.connection.pubsub()
         self.pubsub = pubsub
         pubsub.subscribe(**{sett.RECOVERY_QUEUE: handler})
@@ -28,7 +28,7 @@ class RabbitMQConsumer(IConsumer):
         )
         self.channel = self.connection.channel()
 
-    def start_consuming(self, handler: function):
+    def start_consuming(self, handler):
         self.channel.queue_declare(sett.RECOVERY_QUEUE)
         self.channel.basic_consume(
             sett.RECOVERY_QUEUE, on_message_callback=handler, auto_ack=True

@@ -3,7 +3,7 @@ from abc import ABC, abstractclassmethod
 
 class IConsumer(ABC):
     @abstractclassmethod
-    def start_consuming(self, handler: function) -> None:
+    def start_consuming(self, handler) -> None:
         pass
 
     @abstractclassmethod
