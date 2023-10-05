@@ -19,14 +19,11 @@ class RedisConsumer(IConsumer):
         self.pubsub = self.connection.pubsub()
         self.pubsub.subscribe(**{sett.RECOVERY_QUEUE: handler})
 
-        async def consume():
-            while True:
-                message = self.pubsub.get_message()
-                if message and message["type"] == "message":
-                    payload = message["data"]
-                    handler(payload)
-
-        await consume()
+        while True:
+            message = self.pubsub.get_message()
+            if message and message["type"] == "message":
+                payload = message["data"]
+                handler(payload)
 
     def stop_consuming(self):
         self.STOP_CONSUME = True
