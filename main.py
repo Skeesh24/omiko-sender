@@ -3,8 +3,7 @@ from ast import literal_eval
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-import pika
-
+from services import RabbitMQConsumer, RedisConsumer
 from settings import sett
 
 
@@ -25,28 +24,19 @@ def send_email(to: str, subject: str, msg: str) -> None:
 
 def queue_callback(ch, method, properties, body):
     prepare: dict = lambda msg: literal_eval(msg.decode("utf-8"))
-
     send_email(**prepare(body))
 
 
-def initialize():
-    connection = pika.BlockingConnection(
-        pika.ConnectionParameters(host=sett.BROKER_HOST)
-    )
-    channel = connection.channel()
-    channel.queue_declare(sett.RECOVERY_QUEUE)
-    channel.basic_consume(
-        sett.RECOVERY_QUEUE, on_message_callback=queue_callback, auto_ack=True
-    )
-    return connection, channel
+initialize = lambda host: RedisConsumer(host=host)
 
+consumer = initialize(sett.BROKER_HOST)
+consumer.start_consuming(queue_callback)
 
-connection, channel = initialize()
 
 try:
     print("[*] consuming started")
-    channel.start_consuming()
+    consumer.start_consuming()
 except KeyboardInterrupt:
     print("Interrupted")
-    channel.stop_consuming()
-    connection.close()
+    consumer.stop_consuming()
+    consumer.close()
