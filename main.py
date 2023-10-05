@@ -3,6 +3,7 @@ import smtplib as sender
 from ast import literal_eval
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import threading
 
 from services import RabbitMQConsumer, RedisConsumer
 from settings import sett
@@ -39,10 +40,12 @@ async def main():
     print("[*] Initialization started")
     consumer = RedisConsumer(sett.BROKER_HOST)
     print("[*] Initialization ended")
+    # create a task to run start_consuming asynchronously
+    asyncio.create_task(consumer.start_consuming(redis_queue_callback))
 
     try:
         print("[*] consuming started")
-        await consumer.start_consuming(redis_queue_callback)
+        asyncio.get_event_loop().run_forever()
     except KeyboardInterrupt:
         print("Interrupted")
     finally:
@@ -51,4 +54,7 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    # create a new thread to run the event loop in
+    loop_thread = threading.Thread(target=asyncio.run, args=(main(),))
+    # start the thread
+    loop_thread.start()
