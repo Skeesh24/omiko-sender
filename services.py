@@ -1,16 +1,17 @@
+import asyncio
 import pika
-from redis import Redis
+import aioredis
 
 from interfaces import IConsumer
 from settings import sett
 
 
 class RedisConsumer(IConsumer):
-    def __init__(self, host: str) -> None:
-        self.connection = Redis.from_url(url=host)
+    async def __init__(self, host: str) -> None:
+        self.connection = await aioredis.from_url(host)
         self.STOP_CONSUME = False
 
-    def start_consuming(self, handler):
+    async def start_consuming(self, handler):
         """
         Start consuming a redis connection.
         This method is blocking
@@ -18,7 +19,7 @@ class RedisConsumer(IConsumer):
         self.pubsub = self.connection.pubsub()
         self.pubsub.subscribe(**{sett.RECOVERY_QUEUE: handler})
 
-        def consume():
+        async def consume():
             while not self.STOP_CONSUME:
                 message = self.pubsub.get_message()
                 if message and message['type'] == 'message':
@@ -27,12 +28,13 @@ class RedisConsumer(IConsumer):
                     
             self.STOP_CONSUME = False
 
-        consume()
+        loop = asyncio.get_event_loop()
+        return await loop.run_until_complete(consume)
 
-    def stop_consuming(self):
+    async def stop_consuming(self):
         self.STOP_CONSUME = True
 
-    def close(self):
+    async def close(self):
         self.connection.close()
 
 
