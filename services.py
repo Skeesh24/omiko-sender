@@ -28,9 +28,7 @@ class RedisConsumer(IConsumer):
                     handler(payload)
 
             self.STOP_CONSUME = False
-
-        loop = asyncio.get_event_loop()
-        return await loop.run_until_complete(consume)
+        return consume
 
     def stop_consuming(self):
         self.STOP_CONSUME = True
