@@ -1,6 +1,7 @@
 import asyncio
+
 import pika
-import aioredis
+import redis
 
 from interfaces import IConsumer
 from settings import sett
@@ -8,7 +9,7 @@ from settings import sett
 
 class RedisConsumer(IConsumer):
     async def __init__(self, host: str) -> None:
-        self.connection = await aioredis.from_url(host)
+        self.connection = redis.from_url(host)
         self.STOP_CONSUME = False
 
     async def start_consuming(self, handler):
@@ -22,10 +23,10 @@ class RedisConsumer(IConsumer):
         async def consume():
             while not self.STOP_CONSUME:
                 message = self.pubsub.get_message()
-                if message and message['type'] == 'message':
-                    payload = message['data']
+                if message and message["type"] == "message":
+                    payload = message["data"]
                     handler(payload)
-                    
+
             self.STOP_CONSUME = False
 
         loop = asyncio.get_event_loop()
