@@ -8,13 +8,25 @@ from settings import sett
 class RedisConsumer(IConsumer):
     def __init__(self, host: str) -> None:
         self.connection = Redis.from_url(url=host)
+        self.STOP_CONSUME = False
 
     def start_consuming(self, handler):
+        """
+        Start consuming a redis connection.
+        This method is blocking
+        """
         self.pubsub = self.connection.pubsub()
         self.pubsub.subscribe(**{sett.RECOVERY_QUEUE: handler})
 
+        def consume():
+            while not self.STOP_CONSUME:
+                self.connection.lpop(sett.RECOVERY_QUEUE)
+            self.STOP_CONSUME = False
+
+        consume()
+
     def stop_consuming(self):
-        self.pubsub.unsubscribe()
+        self.STOP_CONSUME = True
 
     def close(self):
         self.connection.close()
