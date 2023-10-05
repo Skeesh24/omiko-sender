@@ -8,7 +8,7 @@ from settings import sett
 
 
 class RedisConsumer(IConsumer):
-    async def __init__(self, host: str) -> None:
+    def __init__(self, host: str) -> None:
         self.connection = redis.from_url(host)
         self.STOP_CONSUME = False
 
@@ -32,10 +32,10 @@ class RedisConsumer(IConsumer):
         loop = asyncio.get_event_loop()
         return await loop.run_until_complete(consume)
 
-    async def stop_consuming(self):
+    def stop_consuming(self):
         self.STOP_CONSUME = True
 
-    async def close(self):
+    def close(self):
         self.connection.close()
 
 
