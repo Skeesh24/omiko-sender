@@ -35,12 +35,10 @@ def redis_queue_callback(body):
 
 
 consumer = initialize(sett.BROKER_HOST)
-consumer.start_consuming(handler=redis_queue_callback)
-
 
 try:
     print("[*] consuming started")
-    consumer.start_consuming()
+    consumer.start_consuming(redis_queue_callback)
 except KeyboardInterrupt:
     print("Interrupted")
     consumer.stop_consuming()
