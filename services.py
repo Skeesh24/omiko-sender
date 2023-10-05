@@ -26,7 +26,7 @@ class RedisConsumer(IConsumer):
                     payload = message["data"]
                     handler(payload)
 
-        consume()
+        await consume()
 
     def stop_consuming(self):
         self.STOP_CONSUME = True
