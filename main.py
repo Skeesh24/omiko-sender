@@ -34,7 +34,7 @@ if __name__ == "__main__":
     print("[*] Starting service")
     prepare: dict = lambda msg: literal_eval(msg.decode("utf-8"))
     print("[*] Initialization started")
-    consumer = RedisConsumer(sett.BROKER_HOST)
+    consumer = RabbitMQConsumer(sett.BROKER_HOST)
     print("[*] Initialization ended")
 
     try:
