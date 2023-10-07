@@ -14,18 +14,20 @@ def send_email(to: str, subject: str, msg: str) -> None:
     with sender.SMTP(sett.SENDER_HOST, sett.SENDER_PORT) as server:
         server.starttls()
         server.login(sett.SENDER_USERNAME, sett.SENDER_ACC)
-
+        print("preparing body...")
         message = MIMEMultipart()
         message["From"] = sett.SENDER_FROM
         message["To"] = to
         message["Subject"] = subject
         message.attach(MIMEText(msg, "html"))
-
+        print("the letter is ready")
         server.sendmail(sett.SENDER_FROM, to, message.as_string())
+        print("sent successfuly")
         server.quit()
 
 
 def queue_callback(body: bytes) -> None:
+    print("sending...")
     send_email(**literal_eval(body.decode("utf-8")))
     print("email sent")
 
@@ -34,10 +36,12 @@ async def consuming(connection: IBroker):
     while True:
         message = connection.get_message()
         if message:
+            print("[*] message received")
             queue_callback(message)
 
 
 def unblocking_run(connection: IBroker):
+    print("daemon was started with"+str(connection))
     run(consuming(connection))
 
 
