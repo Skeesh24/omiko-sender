@@ -36,11 +36,12 @@ if __name__ == "__main__":
     print("[*] Initialization started")
     consumer = RabbitMQConsumer(sett.BROKER_HOST)
     print("[*] Initialization ended")
-
+    print("[*] Consuming preparing")
+    consumer.prepare_consuming(rabbitmq_queue_callback, sett.RECOVERY_QUEUE)
+    channel = consumer.get_channel()
     try:
-        print("[*] consuming started")
-        consumer.start_consuming(rabbitmq_queue_callback)
+        print("[*] Consuming started")
+        channel.start_consuming()
     except KeyboardInterrupt:
         print("Interrupted")
-        consumer.stop_consuming()
         consumer.close()
