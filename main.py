@@ -1,10 +1,12 @@
 import smtplib as sender
-from os import environ
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from ast import literal_eval
-import pika
+from asyncio import run
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from os import environ
+from threading import Thread
+
+from redis import Redis
 
 
 def send_email(to: str, subject: str, msg: str) -> None:
@@ -22,23 +24,28 @@ def send_email(to: str, subject: str, msg: str) -> None:
         server.quit()
 
 
-def queue_callback(ch, method, properties, body):
-    send_email(**literal_eval(body.decode("utf-8").replace("`", '"')))
+def queue_callback(body):
+    send_email(**literal_eval(body.decode("utf-8")))
     print("email sent")
 
-connection = pika.BlockingConnection(pika.ConnectionParameters(host=environ.get("BROKER_HOST")))
-print("connection passed")
-channel = connection.channel()
-q_name = environ.get("RECOVERY_QUEUE")
-channel.queue_declare(q_name)
-print("queue declaration")
-channel.basic_consume(q_name, on_message_callback=queue_callback, auto_ack=True)
-print("consume initialized")
 
-try:
-    print("[*] consuming started")
-    channel.start_consuming()
-except KeyboardInterrupt:
-    print("Interrupted")
-    channel.stop_consuming()
-    connection.close()
+async def consuming(connection):
+    while True:
+        message = connection.lpop(environ.get("RECOVERY_QUEUE"))
+        if message: queue_callback(message)
+
+
+def unblocking_run(connection):
+    run(consuming(connection))
+
+
+if __name__ == "__main__":
+    print("connect to the broker...")
+    connection: Redis = Redis.from_url(url=environ.get("BROKER_HOST"))
+    print("connection passed")
+    q_name = environ.get("RECOVERY_QUEUE")
+    print("queue declaration")
+    connection.pubsub().subscribe(**{q_name: queue_callback})
+    print("subscribed")
+    print("consume initialized")
+    Thread(target=unblocking_run, args=(connection,)).start()
