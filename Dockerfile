@@ -1,6 +1,8 @@
 FROM python:3.11.5-bookworm
 
-COPY . .
+COPY . /app
+
+WORKDIR /app
 
 RUN pip install -r requirements.txt
 
