@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     try:
         print("[*] consuming started")
-        consumer.start_consuming(redis_queue_callback)
+        consumer.start_consuming(rabbitmq_queue_callback)
     except KeyboardInterrupt:
         print("Interrupted")
         consumer.stop_consuming()
