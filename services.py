@@ -12,4 +12,4 @@ class RedisBroker(IBroker):
         self.connection.pubsub().subscribe(**{queue_name: handler})
 
     def get_message(self):
-        self.connection.lpop(self.queue_name)
+        return self.connection.rpop(self.queue_name)
