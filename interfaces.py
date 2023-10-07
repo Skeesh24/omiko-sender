@@ -3,11 +3,11 @@ from abc import ABC, abstractclassmethod
 
 class IConsumer(ABC):
     @abstractclassmethod
-    def start_consuming(self, handler) -> None:
+    def prepare_consuming(self, handler, queue_name: str) -> None:
         pass
 
     @abstractclassmethod
-    def stop_consuming(self) -> None:
+    def get_channel(self):
         pass
 
     @abstractclassmethod
