@@ -2,54 +2,51 @@ import pika
 from redis import Redis
 
 from interfaces import IConsumer
-from settings import sett
 
 
 class RedisConsumer(IConsumer):
     def __init__(self, host: str) -> None:
-        self.connection = Redis.from_url(url=host)
+        self.__connection = Redis.from_url(url=host)
         self.STOP_CONSUME = False
 
-    def start_consuming(self, handler):
+    def prepare_consuming(self, handler, queue_name: str) -> None:
         """
-        Start consuming a redis connection.
-        This method is blocking
+        Prepare to consume the redis connection.
         """
-        self.pubsub = self.connection.pubsub()
-        self.pubsub.subscribe(**{sett.RECOVERY_QUEUE: handler})
+        self.pubsub = self.__connection.pubsub()
+        self.pubsub.subscribe(**{queue_name: handler})
 
-        def consume():
-            while not self.STOP_CONSUME:
-                message = self.pubsub.get_message()
-                if message and message['type'] == 'message':
-                    payload = message['data']
-                    handler(payload)
-                    
-            self.STOP_CONSUME = False
+        # def consume():
+        #     while not self.STOP_CONSUME:
+        #         message = self.pubsub.get_message()
+        #         if message and message["type"] == "message":
+        #             payload = message["data"]
+        #             handler(payload)
 
-        consume()
+        #     self.STOP_CONSUME = False
 
-    def stop_consuming(self):
-        self.STOP_CONSUME = True
+        # consume()
 
-    def close(self):
-        self.connection.close()
+    def get_channel(self):
+        return self.__connection
+
+    def close(self) -> None:
+        self.__connection.close()
 
 
 class RabbitMQConsumer(IConsumer):
     def __init__(self, host: str) -> None:
-        self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=host))
-        self.channel = self.connection.channel()
+        self.__connection = pika.BlockingConnection(pika.ConnectionParameters(host=host))
+        self.__channel = self.__connection.channel()
 
-    def start_consuming(self, handler):
-        self.channel.queue_declare(sett.RECOVERY_QUEUE)
-        self.channel.basic_consume(
-            sett.RECOVERY_QUEUE, on_message_callback=handler, auto_ack=True
+    def prepare_consuming(self, handler, queue_name: str) -> None:
+        self.__channel.queue_declare(queue_name)
+        self.__channel.basic_consume(
+            queue_name, on_message_callback=handler, auto_ack=True
         )
-        self.channel.start_consuming()
+    
+    def get_channel(self):
+        return self.__channel
 
-    def stop_consuming(self):
-        self.channel.stop_consuming()
-
-    def close(self):
-        self.connection.close()
+    def close(self) -> None:
+        self.__connection.close()
