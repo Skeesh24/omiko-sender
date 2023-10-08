@@ -1,51 +1,35 @@
-import asyncio
-
 import pika
-import redis
+from redis import Redis
 
-from interfaces import IConsumer
-from settings import sett
-
-
-class RedisConsumer(IConsumer):
-    def __init__(self, host: str) -> None:
-        self.connection = redis.from_url(host)
-
-    async def start_consuming(self, handler):
-        """
-        Start consuming a redis connection.
-        This method is blocking
-        """
-        self.pubsub = self.connection.pubsub()
-        self.pubsub.subscribe(**{sett.RECOVERY_QUEUE: handler})
-
-        while True:
-            message = self.pubsub.get_message()
-            if message and message["type"] == "message":
-                payload = message["data"]
-                handler(payload)
-
-    def stop_consuming(self):
-        self.STOP_CONSUME = True
-
-    def close(self):
-        self.connection.close()
+from interface import IBroker
 
 
-class RabbitMQConsumer(IConsumer):
-    def __init__(self, host: str) -> None:
-        self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=host))
-        self.channel = self.connection.channel()
+class RedisBroker(IBroker):
+    def connect(self, url: str) -> None:
+        self.connection = Redis.from_url(url)
 
-    def start_consuming(self, handler):
-        self.channel.queue_declare(sett.RECOVERY_QUEUE)
-        self.channel.basic_consume(
-            sett.RECOVERY_QUEUE, on_message_callback=handler, auto_ack=True
+    def subscribe(self, queue_name: str, handler) -> None:
+        self.queue_name = queue_name
+        self.connection.pubsub().subscribe(**{queue_name: handler})
+
+    def get_message(self) -> bytes:
+        return self.connection.rpop(self.queue_name)
+
+
+class RabbitMQBroker(IBroker):
+    def connect(self, url: str) -> None:
+        self.__connection = pika.BlockingConnection(pika.ConnectionParameters(host=url))
+        self.__channel = self.__connection.channel()
+
+    def subscribe(self, queue_name: str, handler) -> None:
+        self.queue_name = queue_name
+        self.__channel.queue_declare(queue_name)
+        self.__channel.basic_consume(
+            queue_name, on_message_callback=handler, auto_ack=True
         )
-        self.channel.start_consuming()
 
-    def stop_consuming(self):
-        self.channel.stop_consuming()
-
-    def close(self):
-        self.connection.close()
+    def get_message(self) -> bytes:
+        message = self.__channel.basic_get(self.queue_name)
+        if all(message):
+            return None
+        return message[2]

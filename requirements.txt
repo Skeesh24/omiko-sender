@@ -1,3 +1,2 @@
 pika
 redis
-asyncio==3.4.3
